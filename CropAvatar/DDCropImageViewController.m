@@ -19,7 +19,7 @@
     if (imageRatio > containerRatio)
     {
         fitSize.width = size.width;
-        fitSize.height = fitSize.width / self.bounds.size.width * self.bounds.size.height;
+        fitSize.height = fitSize.width / imageRatio;
     }
     else if (imageRatio == containerRatio)
     {
@@ -27,8 +27,8 @@
     }
     else
     {
-        fitSize.height = size.height;
-        fitSize.width = fitSize.height / self.bounds.size.height * self.bounds.size.width;
+        fitSize.width = size.width;
+        fitSize.height = size.width / imageRatio;
     }
     return fitSize;
 }
@@ -36,6 +36,7 @@
 @end
 
 @interface DDCropImageViewController () <UIScrollViewDelegate>
+@property (strong, nonatomic, readwrite) UIView *bottomView;
 @property (strong, nonatomic, readwrite) UIImageView *imageView;
 @property (strong, nonatomic, readwrite) UIScrollView *scrollView;
 
@@ -53,9 +54,11 @@
     self.navigationController.navigationBarHidden = YES;
     
     [self _buildUI];
+    
+    [self _renderImage];
 }
 
-- (void)_buildUI
+- (void)_renderBottomView
 {
     // bottom
     UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.view.frame) - 60, self.view.bounds.size.width, 60)];
@@ -63,12 +66,12 @@
     [self.view addSubview:bottomView];
     
     UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [cancelButton setTitle:@"cancel" forState:UIControlStateNormal];
+    [cancelButton setTitle:@"取消" forState:UIControlStateNormal];
     [cancelButton addTarget:self action:@selector(action_cancel) forControlEvents:UIControlEventTouchUpInside];
     [cancelButton setTitleColor:[UIColor blueColor] forState:UIControlStateNormal];
     
     UIButton *doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [doneButton setTitle:@"done" forState:UIControlStateNormal];
+    [doneButton setTitle:@"确定" forState:UIControlStateNormal];
     [doneButton addTarget:self action:@selector(action_done) forControlEvents:UIControlEventTouchUpInside];
     [doneButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
     
@@ -77,13 +80,18 @@
     
     [bottomView addSubview:cancelButton];
     [bottomView addSubview:doneButton];
-    
+    self.bottomView = bottomView;
+}
+
+- (void)_renderScrollView
+{
     // UIImageView
     UIImageView *imageView = [[UIImageView alloc] initWithImage:self.sourceImage];
     imageView.contentMode = UIViewContentModeScaleAspectFit;
     imageView.autoresizingMask =UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleHeight;
-    self.imageView = imageView;
-    UIScrollView *containScrollerView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height - bottomView.bounds.size.height)];
+    
+    // UIScrollView
+    UIScrollView *containScrollerView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height - self.bottomView.bounds.size.height)];
     containScrollerView.showsVerticalScrollIndicator = NO;
     containScrollerView.showsHorizontalScrollIndicator = NO;
     containScrollerView.scrollsToTop = NO;
@@ -93,24 +101,24 @@
     containScrollerView.delaysContentTouches = NO;
     containScrollerView.canCancelContentTouches = YES;
     containScrollerView.alwaysBounceVertical = NO;
-    self.scrollView = containScrollerView;
-    
-    CGSize imageViewSize = [imageView sizeFit:containScrollerView.bounds.size];
-    
-    containScrollerView.contentSize = imageViewSize;
-    containScrollerView.alwaysBounceVertical = imageViewSize.height < containScrollerView.bounds.size.height;
     containScrollerView.delegate = self;
-    containScrollerView.maximumZoomScale = 5;
+    containScrollerView.maximumZoomScale = 2.5;
     containScrollerView.minimumZoomScale = 1;
     
-    imageView.frame = CGRectMake(0, containScrollerView.center.y - imageViewSize.height * 0.5, imageViewSize.width, imageViewSize.height);
-    
+    // addSubview
     [containScrollerView addSubview:imageView];
     [self.view addSubview:containScrollerView];
     
+    // 赋值
+    self.imageView = imageView;
+    self.scrollView = containScrollerView;
+}
+
+- (void)_renderOverLayer
+{
     // 覆盖浮层
     CAShapeLayer *overLayer = [[CAShapeLayer alloc] init];
-    overLayer.frame = containScrollerView.frame;
+    overLayer.frame = self.scrollView.frame;
     overLayer.fillColor = [UIColor colorWithWhite:0 alpha:0.3].CGColor;
     overLayer.fillRule = kCAFillRuleEvenOdd;
     
@@ -118,18 +126,47 @@
     CGMutablePathRef path = CGPathCreateMutable();
     CGPathAddRect(path, NULL, overLayer.frame);
     CGPathAddEllipseInRect(path, NULL, self.cropRect);
-//    CGPathAddRect(path, NULL, self.cropRect);
+    //    CGPathAddRect(path, NULL, self.cropRect);
     overLayer.path = path;
     
     [self.view.layer addSublayer:overLayer];
+}
+
+- (void)_buildUI
+{
+    [self _renderBottomView];
+    
+    [self _renderScrollView];
+    
+    [self _renderOverLayer];
+}
+
+- (void)_renderImage
+{
+    CGSize size = self.scrollView.bounds.size;
+    CGSize imageSize = self.sourceImage.size;
+    CGSize fitSize = CGSizeZero;
+    CGFloat imageRatio = imageSize.width / imageSize.height;
+//    CGFloat containerRatio = size.width / size.height;
+    
+    fitSize.width = size.width;
+    fitSize.height = fitSize.width / imageRatio;
+    
+    self.imageView.image = self.sourceImage;
+    self.imageView.frame = CGRectMake(0, size.height * 0.5 - fitSize.height * 0.5, fitSize.width, fitSize.height);
+    self.scrollView.contentSize = fitSize;
+    
+    [self refreshImageContainerViewCenter];
+    [self refreshScrollViewContentSize];
 }
 
 // MARK: action
 
 - (void)action_done
 {
-    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:self.scrollView.zoomScale containerView:self.view];
-    
+//    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:self.scrollView.zoomScale containerView:self.view];
+    // 测试可用
+    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:1 containerView:self.view];
     image = [self circularClipImage:image];
     if (_delegate) {
         [_delegate cropImageViewController:self didFinish:image];
@@ -168,7 +205,6 @@
 
 - (void)refreshScrollViewContentSize
 {
-    NSLog(@"%s", __func__);
     CGFloat contentWidthAdd = self.scrollView.bounds.size.width - CGRectGetMaxX(_cropRect);
     CGFloat contentHeightAdd = (MIN(_imageView.frame.size.height, self.scrollView.bounds.size.height) - self.cropRect.size.height) * 0.5;
     CGFloat newSizeW = self.scrollView.contentSize.width + contentWidthAdd;
@@ -184,7 +220,6 @@
 
 - (void)refreshImageContainerViewCenter
 {
-    NSLog(@"%s", __func__);
     CGFloat offsetX = (_scrollView.bounds.size.width > _scrollView.contentSize.width) ? ((_scrollView.bounds.size.width - _scrollView.contentSize.width) * 0.5) : 0.0;
     CGFloat offsetY = (_scrollView.bounds.size.height > _scrollView.contentSize.height) ? ((_scrollView.bounds.size.height - _scrollView.contentSize.height) * 0.5) : 0.0;
     self.imageView.center = CGPointMake(_scrollView.contentSize.width * 0.5 + offsetX, _scrollView.contentSize.height * 0.5 + offsetY);

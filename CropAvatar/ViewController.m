@@ -28,9 +28,8 @@
     // Dispose of any resources that can be recreated.
 }
 
-
-- (IBAction)action_camera {
-    
+- (IBAction)action_camera
+{
     UIImagePickerController *picker = [[UIImagePickerController alloc] init];
     picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
     picker.allowsEditing = NO;
@@ -44,9 +43,9 @@
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info {
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info
+{
     UIImage *originalImage = [info objectForKey:UIImagePickerControllerOriginalImage];
-    
     DDCropImageViewController *cropVc = [[DDCropImageViewController alloc] init];
     cropVc.sourceImage = originalImage;
     cropVc.delegate = self;
