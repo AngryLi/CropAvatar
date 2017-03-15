@@ -32,11 +32,12 @@
 {
     UIImagePickerController *picker = [[UIImagePickerController alloc] init];
     picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
-    picker.allowsEditing = NO;
+//    picker.allowsEditing = YES;
     picker.delegate = self;
     [self showViewController:picker sender:nil];
 }
 
+#pragma mark - UIImagePickerControllerDelegate
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
 {
@@ -45,11 +46,33 @@
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info
 {
-    UIImage *originalImage = [info objectForKey:UIImagePickerControllerOriginalImage];
+    UIImage* image=[info objectForKey:UIImagePickerControllerOriginalImage];
+    
+    // 解决`UIImagePickerController`选择图片旋转90°问题
+    UIImageOrientation imageOrientation=image.imageOrientation;
+    if(imageOrientation!=UIImageOrientationUp)
+    {
+        // 原始图片可以根据照相时的角度来显示，但UIImage无法判定，于是出现获取的图片会向左转９０度的现象。
+        // 以下为调整图片角度的部分
+        UIGraphicsBeginImageContext(image.size);
+        [image drawInRect:CGRectMake(0, 0, image.size.width, image.size.height)];
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        // 调整图片角度完毕
+    }
+    
     DDCropImageViewController *cropVc = [[DDCropImageViewController alloc] init];
-    cropVc.sourceImage = originalImage;
+    cropVc.sourceImage = image;
+    cropVc.needRound = YES;
     cropVc.delegate = self;
     [picker pushViewController:cropVc animated:YES];
+}
+
+#pragma mark - DDCropImageViewControllerDelegate
+
+- (void)cropImageViewController:(DDCropImageViewController *)controller occurError:(NSError *)error
+{
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 - (void)cropImageViewControllerCanceled:(DDCropImageViewController *)controller

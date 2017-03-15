@@ -7,16 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D62BAAD41E78F46000D54D5B /* DDCropImageViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D62BAAD31E78F46000D54D5B /* DDCropImageViewController.m */; };
 		D6430E1C1E778B260089E998 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D6430E1B1E778B260089E998 /* main.m */; };
 		D6430E1F1E778B260089E998 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D6430E1E1E778B260089E998 /* AppDelegate.m */; };
 		D6430E221E778B260089E998 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D6430E211E778B260089E998 /* ViewController.m */; };
 		D6430E251E778B260089E998 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D6430E231E778B260089E998 /* Main.storyboard */; };
 		D6430E271E778B260089E998 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6430E261E778B260089E998 /* Assets.xcassets */; };
 		D6430E2A1E778B260089E998 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D6430E281E778B260089E998 /* LaunchScreen.storyboard */; };
-		D6430E331E778E560089E998 /* DDCropImageViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D6430E321E778E560089E998 /* DDCropImageViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D62BAAD21E78F46000D54D5B /* DDCropImageViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDCropImageViewController.h; sourceTree = "<group>"; };
+		D62BAAD31E78F46000D54D5B /* DDCropImageViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DDCropImageViewController.m; sourceTree = "<group>"; };
 		D6430E171E778B260089E998 /* CropAvatar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CropAvatar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D6430E1B1E778B260089E998 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		D6430E1D1E778B260089E998 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -27,8 +29,6 @@
 		D6430E261E778B260089E998 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D6430E291E778B260089E998 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D6430E2B1E778B260089E998 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		D6430E311E778E560089E998 /* DDCropImageViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDCropImageViewController.h; sourceTree = "<group>"; };
-		D6430E321E778E560089E998 /* DDCropImageViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DDCropImageViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -42,6 +42,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D62BAAD11E78F46000D54D5B /* DDCropImageViewController */ = {
+			isa = PBXGroup;
+			children = (
+				D62BAAD21E78F46000D54D5B /* DDCropImageViewController.h */,
+				D62BAAD31E78F46000D54D5B /* DDCropImageViewController.m */,
+			);
+			path = DDCropImageViewController;
+			sourceTree = "<group>";
+		};
 		D6430E0E1E778B260089E998 = {
 			isa = PBXGroup;
 			children = (
@@ -61,8 +70,7 @@
 		D6430E191E778B260089E998 /* CropAvatar */ = {
 			isa = PBXGroup;
 			children = (
-				D6430E311E778E560089E998 /* DDCropImageViewController.h */,
-				D6430E321E778E560089E998 /* DDCropImageViewController.m */,
+				D62BAAD11E78F46000D54D5B /* DDCropImageViewController */,
 				D6430E1D1E778B260089E998 /* AppDelegate.h */,
 				D6430E1E1E778B260089E998 /* AppDelegate.m */,
 				D6430E201E778B260089E998 /* ViewController.h */,
@@ -156,8 +164,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D6430E331E778E560089E998 /* DDCropImageViewController.m in Sources */,
 				D6430E221E778B260089E998 /* ViewController.m in Sources */,
+				D62BAAD41E78F46000D54D5B /* DDCropImageViewController.m in Sources */,
 				D6430E1F1E778B260089E998 /* AppDelegate.m in Sources */,
 				D6430E1C1E778B260089E998 /* main.m in Sources */,
 			);
