@@ -8,6 +8,14 @@
 
 #import "DDCropImageViewController.h"
 
+#define buttonHeight 40
+#define paddingX 16
+#define paddingY 16
+#define marginY 8
+#define bottomViewHeight  (paddingY * 2 + buttonHeight * 3 + marginY * 2)
+
+#define navigationBarHeight 64.0
+
 @interface DDCropImageViewController () <UIScrollViewDelegate>
 @property (strong, nonatomic, readwrite) UIView *bottomView;
 @property (strong, nonatomic, readwrite) UIImageView *imageView;
@@ -24,7 +32,12 @@
     // Do any additional setup after loading the view.
     self.view.backgroundColor = [UIColor blackColor];
     self.automaticallyAdjustsScrollViewInsets = NO;
-    self.navigationController.navigationBarHidden = YES;
+    //    self.edgesForExtendedLayout = UIRectEdgeNone;
+    //    self.navigationController.navigationBarHidden = YES;
+    
+    self.navigationController.navigationBar.barTintColor = [UIColor colorWithRed:26/255.0 green:114/255.0 blue:230/255.0 alpha:1];
+    
+    self.title = @"编辑裁剪";
     
     if (self.sourceImage == nil)
     {
@@ -41,27 +54,87 @@
     }
 }
 
+#pragma mark - action
+
+- (void)action_cancel
+{
+    if (_delegate) {
+        [_delegate cropImageViewControllerCanceled:self];
+    }
+}
+
+- (void)action_album
+{
+    
+}
+
+- (void)action_camera
+{
+    
+}
+
+- (void)action_done
+{
+    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:1 containerView:self.view];
+    // 原代码中的`zoomScale`参数导致bug
+    //    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:self.scrollView.zoomScale containerView:self.view];
+    if (self.needRound) {
+        image = [self circularClipImage:image];
+    }
+    if (_delegate) {
+        [_delegate cropImageViewController:self didFinish:image];
+    }
+}
+
+#pragma mark - private
+- (void)_buildUI
+{
+    [self _renderScrollView];
+    
+    [self _renderOverLayer];
+    
+    [self _renderBottomView];
+    
+    [self _renderNavigationItem];
+}
+
+- (void)_renderNavigationItem {
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"cancel" style:UIBarButtonItemStyleDone target:self action:@selector(action_cancel)];
+}
+
 - (void)_renderBottomView
 {
     // bottom
-    UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.view.frame) - 60, self.view.bounds.size.width, 60)];
-    bottomView.backgroundColor = [UIColor blackColor];
+    UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.view.frame) - bottomViewHeight, self.view.bounds.size.width, bottomViewHeight)];
+    bottomView.backgroundColor = [UIColor clearColor];
     [self.view addSubview:bottomView];
     
-    UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [cancelButton setTitle:@"取消" forState:UIControlStateNormal];
-    [cancelButton addTarget:self action:@selector(action_cancel) forControlEvents:UIControlEventTouchUpInside];
-//    [cancelButton setTitleColor:[UIColor blueColor] forState:UIControlStateNormal];
+    
+    UIButton *albumButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [albumButton setTitle:@"相册" forState:UIControlStateNormal];
+    [albumButton addTarget:self action:@selector(action_album) forControlEvents:UIControlEventTouchUpInside];
+    [albumButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    albumButton.backgroundColor = [UIColor whiteColor];
+    
+    UIButton *cameraButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [cameraButton setTitle:@"拍照" forState:UIControlStateNormal];
+    [cameraButton addTarget:self action:@selector(action_camera) forControlEvents:UIControlEventTouchUpInside];
+    cameraButton.backgroundColor = [UIColor whiteColor];
+    [cameraButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     
     UIButton *doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [doneButton setTitle:@"确定" forState:UIControlStateNormal];
     [doneButton addTarget:self action:@selector(action_done) forControlEvents:UIControlEventTouchUpInside];
-//    [doneButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+    doneButton.backgroundColor = [UIColor whiteColor];
+    [doneButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
     
-    cancelButton.frame = CGRectMake(0, 0, CGRectGetWidth(bottomView.bounds) * 0.5, bottomView.bounds.size.height);
-    doneButton.frame = CGRectMake(CGRectGetWidth(bottomView.bounds) * 0.5, 0, CGRectGetWidth(bottomView.bounds) * 0.5, bottomView.bounds.size.height);
     
-    [bottomView addSubview:cancelButton];
+    albumButton.frame = CGRectMake(paddingX, paddingY, CGRectGetWidth(bottomView.bounds) - 2 * paddingX, buttonHeight);
+    cameraButton.frame = CGRectMake(paddingX, CGRectGetMaxY(albumButton.frame) + marginY, CGRectGetWidth(albumButton.bounds), buttonHeight);
+    doneButton.frame = CGRectMake(paddingX, CGRectGetMaxY(cameraButton.frame) + marginY, CGRectGetWidth(albumButton.bounds), buttonHeight);
+    
+    [bottomView addSubview:albumButton];
+    [bottomView addSubview:cameraButton];
     [bottomView addSubview:doneButton];
     self.bottomView = bottomView;
 }
@@ -74,7 +147,7 @@
     imageView.autoresizingMask =UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleHeight;
     
     // UIScrollView
-    UIScrollView *containScrollerView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height - self.bottomView.bounds.size.height)];
+    UIScrollView *containScrollerView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, navigationBarHeight, self.view.bounds.size.width, self.view.bounds.size.height - navigationBarHeight)];
     containScrollerView.showsVerticalScrollIndicator = NO;
     containScrollerView.showsHorizontalScrollIndicator = NO;
     containScrollerView.scrollsToTop = NO;
@@ -105,35 +178,40 @@
     overLayer.fillColor = [UIColor colorWithWhite:0 alpha:0.5].CGColor;
     overLayer.fillRule = kCAFillRuleEvenOdd;
     
-    self.cropRect = CGRectMake( 0, (overLayer.frame.size.height - overLayer.frame.size.width) * 0.5, overLayer.frame.size.width, overLayer.frame.size.width);
+    CGFloat margin = 0.0;
+    CGFloat cropWidth = MIN(CGRectGetWidth(overLayer.frame), CGRectGetHeight(overLayer.frame) - CGRectGetHeight(self.bottomView.frame)) - 2 * margin;
+    CGFloat cropX = CGRectGetWidth(overLayer.frame) * 0.5 - cropWidth * 0.5 + overLayer.frame.origin.x;
+    CGFloat cropY = (CGRectGetHeight(overLayer.frame) - bottomViewHeight) * 0.5 - cropWidth * 0.5 + overLayer.frame.origin.y;
+    self.cropRect = CGRectMake( cropX, cropY,cropWidth, cropWidth);
     CGMutablePathRef path = CGPathCreateMutable();
-    CGPathAddRect(path, NULL, overLayer.frame);
+    CGPathAddRect(path, NULL, overLayer.bounds);
     if (self.needRound) {
-        CGPathAddEllipseInRect(path, NULL, self.cropRect);
+        CGPathAddEllipseInRect(path, NULL, CGRectMake(cropX - overLayer.frame.origin.x, cropY - overLayer.frame.origin.y, cropWidth, cropWidth));
     } else {
-        CGPathAddRect(path, NULL, self.cropRect);
+        CGPathAddRect(path, NULL, CGRectMake(cropX - overLayer.frame.origin.x, cropY - overLayer.frame.origin.y, cropWidth, cropWidth));
     }
     overLayer.path = path;
     
     [self.view.layer addSublayer:overLayer];
 }
 
-- (void)_buildUI
-{
-    [self _renderBottomView];
-    
-    [self _renderScrollView];
-    
-    [self _renderOverLayer];
-}
-
 - (void)_renderImage
 {
+    if (self.sourceImage == nil)
+    {
+        if (_delegate)
+        {
+            NSError *error = [NSError errorWithDomain:@"com.dada.cropImage" code:-1 userInfo:@{@"reason":@"原始图像不能为空"}];
+            [_delegate cropImageViewController:self occurError:error];
+        }
+        return;
+    }
+    self.scrollView.zoomScale = self.scrollView.minimumZoomScale;
     CGSize size = self.scrollView.bounds.size;
     CGSize imageSize = self.sourceImage.size;
     CGSize fitSize = CGSizeZero;
     CGFloat imageRatio = imageSize.width / imageSize.height;
-//    CGFloat containerRatio = size.width / size.height;
+    //    CGFloat containerRatio = size.width / size.height;
     fitSize.width = size.width;
     fitSize.height = fitSize.width / imageRatio;
     if (fitSize.height < CGRectGetHeight(self.cropRect))
@@ -146,7 +224,7 @@
     self.imageView.frame = CGRectMake(0, size.height * 0.5 - fitSize.height * 0.5, fitSize.width, fitSize.height);
     self.scrollView.contentSize = fitSize;
     
-    [self refreshImageContainerViewCenter];
+    [self refreshImageViewCenter];
     [self refreshScrollViewContentSize];
 }
 
@@ -174,32 +252,36 @@
     return fitSize;
 }
 
-// MARK: action
-
-- (void)action_done
+- (void)refreshScrollViewContentSize
 {
-    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:1 containerView:self.view];
-    // 原代码中的`zoomScale`参数导致bug
-//    UIImage *image = [self cropImageView:self.imageView toRect:self.cropRect zoomScale:self.scrollView.zoomScale containerView:self.view];
-    if (self.needRound) {
-        image = [self circularClipImage:image];
+    CGFloat contentWidthAdd = self.scrollView.bounds.size.width - CGRectGetMaxX(_cropRect);
+    CGFloat contentHeightAdd = (MIN(_imageView.frame.size.height, self.scrollView.bounds.size.height) - self.cropRect.size.height) * 0.5;
+    CGFloat newSizeW = self.scrollView.contentSize.width + contentWidthAdd;
+    CGFloat newSizeH = MAX(self.scrollView.contentSize.height, self.scrollView.bounds.size.height) + contentHeightAdd;
+    _scrollView.contentSize = CGSizeMake(newSizeW, newSizeH);
+    _scrollView.alwaysBounceVertical = YES;
+    UIEdgeInsets inset = UIEdgeInsetsZero;
+    if (contentHeightAdd > 0) {
+        inset.top = contentHeightAdd;
     }
-    if (_delegate) {
-        [_delegate cropImageViewController:self didFinish:image];
+    if (contentWidthAdd > 0) {
+        inset.left = contentWidthAdd;
     }
+    _scrollView.contentInset = inset;
 }
 
-- (void)action_cancel
+- (void)refreshImageViewCenter
 {
-    if (_delegate) {
-        [_delegate cropImageViewControllerCanceled:self];
-    }
+    CGPoint translate = CGPointMake(self.cropRect.origin.x + self.cropRect.size.width * 0.5 - self.scrollView.center.x, self.cropRect.origin.y + self.cropRect.size.height * 0.5 - self.scrollView.center.y);
+    
+    CGFloat offsetX = (_scrollView.bounds.size.width > _scrollView.contentSize.width) ? ((_scrollView.bounds.size.width - _scrollView.contentSize.width) * 0.5) : 0.0;
+    CGFloat offsetY = (_scrollView.bounds.size.height > _scrollView.contentSize.height) ? ((_scrollView.bounds.size.height - _scrollView.contentSize.height) * 0.5) : 0.0;
+    self.imageView.center = CGPointMake(_scrollView.contentSize.width * 0.5 + offsetX + translate.x, _scrollView.contentSize.height * 0.5 + offsetY + translate.y);
 }
 
-// MARK: UIScrollViewDelegate
+#pragma mark - UIScrollViewDelegate
 
-- (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView
-{
+- (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView {
     return self.imageView;
 }
 
@@ -209,37 +291,15 @@
     scrollView.contentSize = _imageView.frame.size;
 }
 
-- (void)scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(CGFloat)scale
-{
+- (void)scrollViewDidEndZooming:(UIScrollView *)scrollView withView:(UIView *)view atScale:(CGFloat)scale {
     [self refreshScrollViewContentSize];
 }
 
-- (void)scrollViewDidZoom:(UIScrollView *)scrollView
-{
-    [self refreshImageContainerViewCenter];
+- (void)scrollViewDidZoom:(UIScrollView *)scrollView {
+    [self refreshImageViewCenter];
 }
 
-- (void)refreshScrollViewContentSize
-{
-    CGFloat contentWidthAdd = self.scrollView.bounds.size.width - CGRectGetMaxX(_cropRect);
-    CGFloat contentHeightAdd = (MIN(_imageView.frame.size.height, self.scrollView.bounds.size.height) - self.cropRect.size.height) * 0.5;
-    CGFloat newSizeW = self.scrollView.contentSize.width + contentWidthAdd;
-    CGFloat newSizeH = MAX(self.scrollView.contentSize.height, self.scrollView.bounds.size.height) + contentHeightAdd;
-    _scrollView.contentSize = CGSizeMake(newSizeW, newSizeH);
-    _scrollView.alwaysBounceVertical = YES;
-    if (contentHeightAdd > 0) {
-        _scrollView.contentInset = UIEdgeInsetsMake(contentHeightAdd, _cropRect.origin.x, 0, 0);
-    } else {
-        _scrollView.contentInset = UIEdgeInsetsZero;
-    }
-}
-
-- (void)refreshImageContainerViewCenter
-{
-    CGFloat offsetX = (_scrollView.bounds.size.width > _scrollView.contentSize.width) ? ((_scrollView.bounds.size.width - _scrollView.contentSize.width) * 0.5) : 0.0;
-    CGFloat offsetY = (_scrollView.bounds.size.height > _scrollView.contentSize.height) ? ((_scrollView.bounds.size.height - _scrollView.contentSize.height) * 0.5) : 0.0;
-    self.imageView.center = CGPointMake(_scrollView.contentSize.width * 0.5 + offsetX, _scrollView.contentSize.height * 0.5 + offsetY);
-}
+#pragma mark - 画布截图
 
 /// 获得裁剪后的图片
 - (UIImage *)cropImageView:(UIImageView *)imageView toRect:(CGRect)rect zoomScale:(double)zoomScale containerView:(UIView *)containerView
@@ -248,9 +308,7 @@
     // 平移的处理
     CGRect imageViewRect = [imageView convertRect:imageView.bounds toView:containerView];
     CGPoint point = CGPointMake(imageViewRect.origin.x + imageViewRect.size.width / 2, imageViewRect.origin.y + imageViewRect.size.height / 2);
-//    CGFloat xMargin = containerView.bounds.size.width - CGRectGetMaxX(rect) - rect.origin.x;
     CGPoint zeroPoint = CGPointMake(rect.origin.x + 0.5 * rect.size.width, rect.origin.y + 0.5 * rect.size.height);
-    //CGPointMake((CGRectGetWidth(containerView.frame) - xMargin) / 2, containerView.center.y);
     CGPoint translation = CGPointMake(point.x - zeroPoint.x, point.y - zeroPoint.y);
     transform = CGAffineTransformTranslate(transform, translation.x, translation.y);
     // 缩放的处理
@@ -279,14 +337,12 @@
     CGContextSetFillColorWithColor(context, [[UIColor clearColor] CGColor]);
     CGContextFillRect(context, CGRectMake(0, 0, outputSize.width, outputSize.height));
     
-    // error
     CGAffineTransform uiCoords = CGAffineTransformMakeScale(outputSize.width / cropSize.width, outputSize.height / cropSize.height);
     uiCoords = CGAffineTransformTranslate(uiCoords, cropSize.width/2.0, cropSize.height / 2.0);
     uiCoords = CGAffineTransformScale(uiCoords, 1.0, -1.0);
     CGContextConcatCTM(context, uiCoords);
     
     CGContextConcatCTM(context, transform);
-    // error
     CGContextScaleCTM(context, 1.0, -1.0);
     
     CGContextDrawImage(context, CGRectMake(-imageViewSize.width/2, -imageViewSize.height/2.0, imageViewSize.width, imageViewSize.height), source);
@@ -302,7 +358,7 @@
     CGColorSpaceRef rgbColorSpace = CGColorSpaceCreateDeviceRGB();
     CGContextRef context = CGBitmapContextCreate(NULL, size.width, size.height, 8, 0, rgbColorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(rgbColorSpace);
-    CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+    CGContextSetInterpolationQuality(context, kCGInterpolationDefault);
     
     CGContextDrawImage(context, CGRectMake(0, 0, srcSize.width, srcSize.height), source);
     CGImageRef resultRef = CGBitmapContextCreateImage(context);
