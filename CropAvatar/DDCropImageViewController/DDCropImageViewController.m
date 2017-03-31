@@ -8,20 +8,27 @@
 
 #import "DDCropImageViewController.h"
 
-#define buttonHeight 40
-#define paddingX 16
-#define paddingY 16
-#define marginY 8
-#define bottomViewHeight  (paddingY * 2 + buttonHeight * 3 + marginY * 2)
+#define buttonHeight 40 // 底部 按钮 高度
+#define paddingX 16 // 底部按钮两侧边距
+#define paddingY 16 // 底部按钮上下边距
+#define marginY 8 // 底部按钮间距
+#define bottomViewHeight  (paddingY * 2 + buttonHeight * 3 + marginY * 2) // 底部视图高度
 
-#define navigationBarHeight 64.0
+#define navigationBarHeight 64.0 // 导航栏所影响的高度
+
+#define FixError 1
+
+/*
+ 所有view和layer的frame都以self.view为基准。
+ */
 
 @interface DDCropImageViewController () <UIScrollViewDelegate>
+
 @property (strong, nonatomic, readwrite) UIView *bottomView;
 @property (strong, nonatomic, readwrite) UIImageView *imageView;
 @property (strong, nonatomic, readwrite) UIScrollView *scrollView;
 
-@property (assign, nonatomic, readwrite) CGRect cropRect;
+@property (assign, nonatomic, readwrite) CGRect cropRect; // 截图区域
 @end
 
 @implementation DDCropImageViewController
@@ -36,7 +43,6 @@
     //    self.navigationController.navigationBarHidden = YES;
     
     self.navigationController.navigationBar.barTintColor = [UIColor colorWithRed:26/255.0 green:114/255.0 blue:230/255.0 alpha:1];
-    
     self.title = @"编辑裁剪";
     
     if (self.sourceImage == nil)
@@ -70,7 +76,6 @@
 
 - (void)action_camera
 {
-    
 }
 
 - (void)action_done
@@ -87,14 +92,19 @@
 }
 
 #pragma mark - private
+
 - (void)_buildUI
 {
+    // 滚动视图
     [self _renderScrollView];
     
+    // 透明黑色浮层
     [self _renderOverLayer];
     
+    // 底部按钮视图
     [self _renderBottomView];
     
+    // 导航栏
     [self _renderNavigationItem];
 }
 
@@ -178,8 +188,11 @@
     overLayer.fillColor = [UIColor colorWithWhite:0 alpha:0.5].CGColor;
     overLayer.fillRule = kCAFillRuleEvenOdd;
     
-    CGFloat margin = 0.0;
-    CGFloat cropWidth = MIN(CGRectGetWidth(overLayer.frame), CGRectGetHeight(overLayer.frame) - CGRectGetHeight(self.bottomView.frame)) - 2 * margin;
+    CGFloat cropWidth = MIN(CGRectGetWidth(overLayer.frame), CGRectGetHeight(overLayer.frame) - CGRectGetHeight(self.bottomView.frame));
+    if (self.cropWidth > 0) {
+        cropWidth = MIN(self.cropWidth, cropWidth);
+    }
+    self.cropWidth = cropWidth;
     CGFloat cropX = CGRectGetWidth(overLayer.frame) * 0.5 - cropWidth * 0.5 + overLayer.frame.origin.x;
     CGFloat cropY = (CGRectGetHeight(overLayer.frame) - bottomViewHeight) * 0.5 - cropWidth * 0.5 + overLayer.frame.origin.y;
     self.cropRect = CGRectMake( cropX, cropY,cropWidth, cropWidth);
@@ -252,14 +265,23 @@
     return fitSize;
 }
 
+/// 根据当前放大倍数(imageView的大小)，调整contentSize/contentInset使全部视图都能显示在截图区域
 - (void)refreshScrollViewContentSize
 {
+    /// 因为增加contentSize只会在当前contentView的尾部增加大小
+    /// 所以对于 right + bottom 的部分采用放大contentSie的方法使其能够出现在裁剪区域
+    /// 对于 top + left 的部分，采用 contentInset 的方式使其能够显示在裁剪区域。
+    
+    // 计算右侧 contentSize 需要放大的 contentSize
     CGFloat contentWidthAdd = self.scrollView.bounds.size.width - CGRectGetMaxX(_cropRect);
+    /// 计算底部应该增加的contentSize
     CGFloat contentHeightAdd = (MIN(_imageView.frame.size.height, self.scrollView.bounds.size.height) - self.cropRect.size.height) * 0.5;
+    
     CGFloat newSizeW = self.scrollView.contentSize.width + contentWidthAdd;
     CGFloat newSizeH = MAX(self.scrollView.contentSize.height, self.scrollView.bounds.size.height) + contentHeightAdd;
     _scrollView.contentSize = CGSizeMake(newSizeW, newSizeH);
     _scrollView.alwaysBounceVertical = YES;
+    
     UIEdgeInsets inset = UIEdgeInsetsZero;
     if (contentHeightAdd > 0) {
         inset.top = contentHeightAdd;
@@ -272,6 +294,7 @@
 
 - (void)refreshImageViewCenter
 {
+    // 当裁剪区域和滚动视图的center不重合时，使用translate使图片的center和裁剪区域的center保持一致
     CGPoint translate = CGPointMake(self.cropRect.origin.x + self.cropRect.size.width * 0.5 - self.scrollView.center.x, self.cropRect.origin.y + self.cropRect.size.height * 0.5 - self.scrollView.center.y);
     
     CGFloat offsetX = (_scrollView.bounds.size.width > _scrollView.contentSize.width) ? ((_scrollView.bounds.size.width - _scrollView.contentSize.width) * 0.5) : 0.0;
@@ -334,6 +357,12 @@
     CGSize outputSize = CGSizeMake(outputWidth, outputWidth*aspect);
     
     CGContextRef context = CGBitmapContextCreate(NULL, outputSize.width, outputSize.height, CGImageGetBitsPerComponent(source), CGImageGetBytesPerRow(source), CGImageGetColorSpace(source), CGImageGetBitmapInfo(source));
+#if FixError
+    if (context == NULL) {
+        outputSize = cropSize;
+        context = CGBitmapContextCreate(NULL, cropSize.width, cropSize.height, CGImageGetBitsPerComponent(source), CGImageGetBytesPerRow(source), CGImageGetColorSpace(source), CGImageGetBitmapInfo(source));
+    }
+#endif
     CGContextSetFillColorWithColor(context, [[UIColor clearColor] CGColor]);
     CGContextFillRect(context, CGRectMake(0, 0, outputSize.width, outputSize.height));
     
@@ -352,6 +381,7 @@
     return resultRef;
 }
 
+/// 把原始图片转化成 “标准图片”
 - (CGImageRef)newScaledImage:(CGImageRef)source toSize:(CGSize)size
 {
     CGSize srcSize = size;
@@ -366,7 +396,7 @@
     return resultRef;
 }
 
-/// 获取圆形图片
+/// 截取圆形图片
 - (UIImage *)circularClipImage:(UIImage *)image
 {
     UIGraphicsBeginImageContextWithOptions(image.size, NO, [UIScreen mainScreen].scale);

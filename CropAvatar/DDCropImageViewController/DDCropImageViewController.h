@@ -19,7 +19,7 @@
 @interface DDCropImageViewController : UIViewController
 @property (nonnull, strong, nonatomic, readwrite) UIImage *sourceImage;
 @property (assign, nonatomic, readwrite) BOOL needRound;
-//@property (assign, nonatomic, readwrite) float cropWidth;
+@property (assign, nonatomic, readwrite) float cropWidth;
 
 @property (weak, nullable, readwrite) id<DDCropImageViewControllerDelegate> delegate;
 @end

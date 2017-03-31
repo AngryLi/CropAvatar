@@ -30,11 +30,22 @@
 
 - (IBAction)action_camera
 {
-    UIImagePickerController *picker = [[UIImagePickerController alloc] init];
-    picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
-//    picker.allowsEditing = YES;
-    picker.delegate = self;
-    [self showViewController:picker sender:nil];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"选取" message:@"选取" preferredStyle:UIAlertControllerStyleActionSheet];
+    [alert addAction:[UIAlertAction actionWithTitle:@"拍照" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+        picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        //    picker.allowsEditing = YES;
+        picker.delegate = self;
+        [self showViewController:picker sender:nil];
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"相册" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+        picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
+        //    picker.allowsEditing = YES;
+        picker.delegate = self;
+        [self showViewController:picker sender:nil];
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 #pragma mark - UIImagePickerControllerDelegate
